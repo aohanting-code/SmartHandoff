@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request, jsonify, session
 from pathlib import Path
 import json, secrets
-from ai_service import analyse
+from ai_service import analyse_hybrid
 from escalation import decide
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
 DATA = json.loads((Path(__file__).parent/'data/mock_orders.json').read_text())
-# In-memory prototype state; no real customer records or external services.
+# In-memory prototype state; fictional records; optional external model analysis.
 STATES = {}
 def state():
     if 'sid' not in session: session['sid'] = secrets.token_hex(16)
@@ -21,7 +21,7 @@ def action():
     elif a=='message' and s['status']=='chat':
         msg=str(d.get('message','')).strip()[:500]
         if not msg: return jsonify(error='Enter a message.'),400
-        signals=analyse(msg,s['intent']); intent=signals['intent']; s['history'].append('Customer: '+msg)
+        signals=analyse_hybrid(msg,s['intent'],s['history']); s.update(source=signals['source'],fallback=signals['fallback']); intent=signals['intent']; s['history'].append('Customer: '+msg)
         if signals['manual']:
             s['status']='review'; s['reason']='You requested human support.'
         else:

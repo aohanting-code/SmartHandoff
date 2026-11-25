@@ -1,3 +1,10 @@
+import pytest
+import ai_service
+
+@pytest.fixture(autouse=True)
+def local_by_default(monkeypatch):
+    monkeypatch.setenv("SMART_HANDOFF_MODE", "local")
+
 from escalation import decide
 from ai_service import analyse
 from app import app
@@ -56,3 +63,38 @@ def test_frustration_signal():
         "I am disappointed with my refund"
     )
     assert result["negative"] is True
+
+
+def enable_mock(monkeypatch):
+    monkeypatch.setenv('SMART_HANDOFF_MODE', 'hybrid')
+    monkeypatch.setenv('GEMINI_API_KEY', 'fake-test-key')
+
+
+def test_hybrid_success(monkeypatch):
+    enable_mock(monkeypatch)
+    monkeypatch.setattr(ai_service, '_gemini', lambda *a: {'intent':'delivery','negative':False,'manual':False})
+    with app.test_client() as c:
+        s=c.post('/api/action',json={'action':'message','message':'Has it left the warehouse?'}).json['state']
+        assert s['intent']=='delivery' and s['source'].startswith('Gemini')
+
+
+def test_hybrid_failure(monkeypatch):
+    enable_mock(monkeypatch)
+    def fail(*a): raise TimeoutError()
+    monkeypatch.setattr(ai_service, '_gemini', fail)
+    result=ai_service.analyse_hybrid('Where is my refund?')
+    assert result['intent']=='refund' and result['fallback']=='TimeoutError'
+
+
+def test_invalid_model_output(monkeypatch):
+    enable_mock(monkeypatch)
+    monkeypatch.setattr(ai_service, '_gemini', lambda *a: {'intent':'invalid','negative':'false','manual':False})
+    assert ai_service.analyse_hybrid('Track my parcel')['source']=='Local rules (fallback)'
+
+
+def test_model_cannot_block_manual_request(monkeypatch):
+    enable_mock(monkeypatch)
+    monkeypatch.setattr(ai_service, '_gemini', lambda *a: {'intent':'other','negative':False,'manual':False})
+    with app.test_client() as c:
+        s=c.post('/api/action',json={'action':'message','message':'I want a human agent'}).json['state']
+        assert s['status']=='review' and not s.get('ticket')
