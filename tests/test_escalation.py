@@ -25,3 +25,34 @@ def test_handoff():
         assert act('cancel').json['state']['status']=='chat'
         assert act('manual').json['state']['status']=='review'
         assert act('decline').json['state']['status']=='chat'
+
+
+from ai_service import analyse
+
+
+def test_order_intent():
+    result = analyse("Where is my order?")
+    assert result["intent"] == "delivery"
+
+
+def test_context_follow_up():
+    result = analyse(
+        "Help me find it",
+        previous="refund"
+    )
+    assert result["intent"] == "refund"
+
+
+def test_explicit_intent_change():
+    result = analyse(
+        "Where is my parcel?",
+        previous="refund"
+    )
+    assert result["intent"] == "delivery"
+
+
+def test_frustration_signal():
+    result = analyse(
+        "I am disappointed with my refund"
+    )
+    assert result["negative"] is True
