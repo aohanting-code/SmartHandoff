@@ -4,8 +4,7 @@ An intelligent customer support prototype with mixed-initiative
 human escalation.
 
 **Module:** Intelligent Interactive Systems  
-**Assignment:** Assignment 2 — Project Report  
-**README prose word count:** [Update after final review]
+**Assignment:** Assignment 2 — Project Report   
 
 ## 1. Project Status
 
