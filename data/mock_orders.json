@@ -1,0 +1,5 @@
+{
+    "delivery": "Demo order SH1001 is out for delivery. Estimated arrival: tomorrow.",
+    "refund": "Demo refund SH1001 was requested, but payment settlement information is unavailable.",
+    "return": "Demo policy: unused items may be returned within 30 days. This prototype cannot issue a return label."
+}
